@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Use a pleasant Google Font for better visuals -->
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap" rel="stylesheet">
+    <title>Random Quote Generator</title>
+    <style>
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            font-family: 'Montserrat', sans-serif;
+            transition: background 1s cubic-bezier(.6, -.28, .74, .05);
+            /* For smoother background transitions */
+            will-change: background;
+        }
+
+        .quote-card {
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 1rem;
+            box-shadow: 0 7px 32px rgba(80, 92, 120, 0.16), 0 1.5px 6px rgba(80, 92, 120, 0.10);
+            max-width: 450px;
+            width: 90vw;
+            padding: 2.5rem 2rem 2rem 2rem;
+            text-align: center;
+            transition: box-shadow 0.3s;
+        }
+
+        .quote-text {
+            margin: 0 0 1.2rem 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #3a2f55;
+            min-height: 60px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .quote-author {
+            font-size: 1rem;
+            color: #8576a7;
+            font-weight: 400;
+            margin-bottom: 2rem;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .fade-in {
+            opacity: 1 !important;
+        }
+
+        /* Additional styling for category select */
+        .category-select {
+            display: block;
+            width: 60%;
+            margin: 0 auto 1.6rem auto;
+            font-size: 1rem;
+            border-radius: 1.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #a18cd1;
+            background: #f5f2fa;
+            color: #584e6b;
+            outline: none;
+            font-family: 'Montserrat', sans-serif;
+            transition: border 0.2s;
+        }
+        .category-select:focus {
+            border: 2px solid #fbc2eb;
+        }
+
+        .new-quote-btn {
+            padding: 0.7rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 2rem;
+            background: linear-gradient(90deg, #a18cd1 10%, #fbc2eb 90%);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(107, 91, 149, 0.20);
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .new-quote-btn:hover {
+            background: linear-gradient(90deg, #fbc2eb 10%, #a18cd1 90%);
+            transform: translateY(-2px) scale(1.04);
+        }
+
+        @media (max-width: 600px) {
+            .quote-card {
+                padding: 1.5rem 0.7rem 1.2rem 0.7rem;
+            }
+            .quote-text {
+                font-size: 1rem;
+            }
+            .quote-author {
+                font-size: 0.85rem;
+            }
+            .category-select {
+                font-size: 0.95rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Card container for the quote, dropdown, and button -->
+    <div class="quote-card">
+        <!-- Dropdown to select quote category -->
+        <select class="category-select" id="categorySelect">
+            <!-- Options will be populated by JS -->
+        </select>
+        <!-- This is where the quote will be displayed -->
+        <div class="quote-text" id="quoteText"></div>
+        <div class="quote-author" id="quoteAuthor"></div>
+        <!-- Button to get a new random quote -->
+        <button class="new-quote-btn" id="newQuoteBtn">New Quote</button>
+    </div>
+
+    <script>
+        /*
+         * --- Filtering Logic Explained ---
+         * Quotes are enhanced with a 'category' property (e.g., Motivation, Success, Life).
+         * A dropdown lets the user select which category to view.
+         * When a category is selected, only quotes from that category are considered for display.
+         * If "All" is chosen, any quote can be shown.
+         */
+
+        // Quotes enhanced with categories
+        const quotes = [
+            { text: "The best way to get started is to quit talking and begin doing.", author: "Walt Disney", category: "Motivation" },
+            { text: "Success is not in what you have, but who you are.", author: "Bo Bennett", category: "Success" },
+            { text: "Don’t watch the clock; do what it does. Keep going.", author: "Sam Levenson", category: "Motivation" },
+            { text: "Dream bigger. Do bigger.", author: "Unknown", category: "Motivation" },
+            { text: "Great things never come from comfort zones.", author: "Roy T. Bennett", category: "Motivation" },
+            { text: "Push yourself, because no one else is going to do it for you.", author: "Unknown", category: "Motivation" },
+            { text: "Don’t stop when you’re tired; stop when you’re done.", author: "Marilyn Monroe", category: "Motivation" },
+            { text: "The harder you work for something, the greater you’ll feel when you achieve it.", author: "Unknown", category: "Success" },
+            { text: "Sometimes we’re tested not to show our weaknesses, but to discover our strengths.", author: "Unknown", category: "Life" },
+            { text: "Doubt kills more dreams than failure ever will.", author: "Suzy Kassem", category: "Life" },
+            { text: "The only limit to our realization of tomorrow is our doubts of today.", author: "Franklin D. Roosevelt", category: "Success" },
+            { text: "Act as if what you do makes a difference. It does.", author: "William James", category: "Life" },
+            { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe", category: "Motivation" },
+            { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius", category: "Life" },
+            { text: "Success is the sum of small efforts, repeated day-in and day-out.", author: "Robert Collier", category: "Success" }
+        ];
+
+        // Cache references to DOM
+        const quoteText = document.getElementById("quoteText");
+        const quoteAuthor = document.getElementById("quoteAuthor");
+        const newQuoteBtn = document.getElementById("newQuoteBtn");
+        const categorySelect = document.getElementById("categorySelect");
+        const body = document.body;
+
+        // Gradient color options (pairs for gradients)
+        const bgGradients = [
+            ['#a18cd1', '#fbc2eb'],
+            ['#fbc2eb', '#f68084'],
+            ['#92fe9d', '#00c9ff'],
+            ['#fdc830', '#f37335'],
+            ['#43cea2', '#185a9d'],
+            ['#ffaf7b', '#d76d77'],
+            ['#e0c3fc', '#8ec5fc'],
+            ['#ed4264', '#ffedbc'],
+            ['#00c3ff', '#ffff1c'],
+            ['#fe8c00', '#f83600'],
+            ['#3a1c71', '#d76d77', '#ffaf7b'],
+            ['#c471f5', '#fa71cd'],
+            ['#f7971e', '#ffd200'],
+            ['#00b4db', '#0083b0']
+        ];
+
+        // Keep track of last used gradient to avoid immediate repeats
+        let lastGradientIdx = -1;
+
+        function getAllCategories(quotes) {
+            const cats = quotes.map(q => q.category);
+            return ['All', ...Array.from(new Set(cats))];
+        }
+
+        function populateCategorySelect() {
+            const categories = getAllCategories(quotes);
+            categorySelect.innerHTML = '';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                categorySelect.appendChild(opt);
+            });
+        }
+
+        // Get quotes filtered by currently selected category
+        function getFilteredQuotes() {
+            const selected = categorySelect.value;
+            if (selected === 'All') return quotes;
+            // Return only quotes in the selected category
+            return quotes.filter(q => q.category === selected);
+        }
+
+        // Pick a random quote from the filtered list
+        function getRandomQuote() {
+            const filteredQuotes = getFilteredQuotes();
+            if (filteredQuotes.length === 0) {
+                return { text: "No quotes available in this category.", author: "", category: "" };
+            }
+            const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
+            return filteredQuotes[randomIndex];
+        }
+
+        // Utility to pick a new random gradient, avoiding immediate repeats
+        function getRandomGradient() {
+            let idx;
+            do {
+                idx = Math.floor(Math.random() * bgGradients.length);
+            } while (bgGradients.length > 1 && idx === lastGradientIdx);
+            lastGradientIdx = idx;
+            return bgGradients[idx];
+        }
+
+        // Set the background with a smooth transition
+        function setRandomBgGradient() {
+            // Pick a direction for the gradient randomly for extra variation
+            const directions = [ '135deg', '90deg', '60deg', '225deg', 'to right', 'to left', 'to bottom right', 'to top left' ];
+            const direction = directions[Math.floor(Math.random() * directions.length)];
+            const colors = getRandomGradient();
+
+            // CSS linear-gradient as a string
+            const gradient = `linear-gradient(${direction}, ${colors.join(', ')})`;
+
+            // Set background with transition (smooth, handled by CSS)
+            body.style.background = gradient;
+        }
+
+        // Show a new quote, author, and change bg gradient with fade-in animation
+        function showQuote() {
+            quoteText.classList.remove("fade-in");
+            quoteAuthor.classList.remove("fade-in");
+
+            // Update the quote and author
+            const quoteObj = getRandomQuote();
+            quoteText.textContent = quoteObj.text;
+            quoteAuthor.textContent = quoteObj.author ? "— " + quoteObj.author : "";
+
+            setTimeout(() => {
+                quoteText.classList.add("fade-in");
+                quoteAuthor.classList.add("fade-in");
+            }, 30);
+
+            // Change the background gradient smoothly
+            setRandomBgGradient();
+        }
+
+        // On category change, show a new quote in that category
+        categorySelect.addEventListener("change", showQuote);
+        // On button click, show a new quote
+        newQuoteBtn.addEventListener("click", showQuote);
+
+        // Populate categories and show a quote on load
+        window.addEventListener("DOMContentLoaded", () => {
+            populateCategorySelect();
+            showQuote();
+        });
+    </script>
+</body>
+</html>
